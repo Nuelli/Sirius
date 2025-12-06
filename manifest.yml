@@ -1,0 +1,31 @@
+modules:
+  webtrigger:
+    - key: test-trigger
+      function: webTriggerFunction
+      response:
+        type: dynamic
+  scheduledTrigger:
+    - key: scheduled-task
+      function: scheduledFunction
+      interval: hour
+  function:
+    - key: webTriggerFunction
+      handler: scheduled.run
+    - key: scheduledFunction
+      handler: scheduled.run
+      timeoutSeconds: 900
+permissions:
+  scopes:
+    - read:jira-work
+    - write:jira-work
+    - storage:app
+  external:
+    fetch:
+      backend:
+        - https://t24r17upgrade.testrail.io
+app:
+  runtime:
+    name: nodejs22.x
+    memoryMB: 256
+    architecture: arm64
+  id: ari:cloud:ecosystem::app/e8505573-3a2a-4084-ac34-281e2fe6f41d
