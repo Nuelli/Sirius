@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { invoke, showFlag } from '@forge/bridge';
-import ForgeReconciler, {
+import {
   Box,
   Button,
   Heading,
@@ -8,7 +8,6 @@ import ForgeReconciler, {
   Textfield,
   Text,
   Label,
-  Form,
 } from '@forge/react';
 
 const AdminConfigPage = () => {
@@ -112,15 +111,15 @@ const AdminConfigPage = () => {
   return (
     <Box padding="space.300">
       <Stack space="space.300">
-        <Stack space="space.100">
+        <div>
           <Heading size="large">TestRail Configuration</Heading>
           <Text>Configure your TestRail credentials and Jira custom field IDs</Text>
-        </Stack>
+        </div>
 
-        <Form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit}>
           <Stack space="space.200">
             {/* TestRail User */}
-            <Stack space="space.050">
+            <div>
               <Label labelFor="testrailUser">TestRail Username</Label>
               <Textfield
                 id="testrailUser"
@@ -130,10 +129,10 @@ const AdminConfigPage = () => {
                 placeholder="Enter your TestRail username (e.g., user@example.com)"
                 type="text"
               />
-            </Stack>
+            </div>
 
             {/* TestRail Token */}
-            <Stack space="space.050">
+            <div>
               <Label labelFor="testrailToken">TestRail API Token</Label>
               <Textfield
                 id="testrailToken"
@@ -143,10 +142,10 @@ const AdminConfigPage = () => {
                 placeholder="Enter your TestRail API token"
                 type="password"
               />
-            </Stack>
+            </div>
 
             {/* TestRail Site URL */}
-            <Stack space="space.050">
+            <div>
               <Label labelFor="testrailSite">TestRail Site URL</Label>
               <Textfield
                 id="testrailSite"
@@ -156,10 +155,10 @@ const AdminConfigPage = () => {
                 placeholder="Enter your TestRail site URL (e.g., https://yoursite.testrail.io)"
                 type="url"
               />
-            </Stack>
+            </div>
 
             {/* Coverage Field ID */}
-            <Stack space="space.050">
+            <div>
               <Label labelFor="coverageFieldId">Coverage Field ID</Label>
               <Textfield
                 id="coverageFieldId"
@@ -169,10 +168,10 @@ const AdminConfigPage = () => {
                 placeholder="e.g., customfield_11969"
                 type="text"
               />
-            </Stack>
+            </div>
 
             {/* Pass Rate Field ID */}
-            <Stack space="space.050">
+            <div>
               <Label labelFor="passRateFieldId">Pass Rate Field ID</Label>
               <Textfield
                 id="passRateFieldId"
@@ -182,7 +181,7 @@ const AdminConfigPage = () => {
                 placeholder="e.g., customfield_11999"
                 type="text"
               />
-            </Stack>
+            </div>
 
             {/* Submit Button */}
             <Button
@@ -193,14 +192,10 @@ const AdminConfigPage = () => {
               {isSaving ? 'Saving...' : 'Save Configuration'}
             </Button>
           </Stack>
-        </Form>
+        </form>
       </Stack>
     </Box>
   );
 };
 
-ForgeReconciler.render(
-  <React.StrictMode>
-    <AdminConfigPage />
-  </React.StrictMode>
-);
+export default AdminConfigPage;

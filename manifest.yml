@@ -1,4 +1,12 @@
 modules:
+  jira:adminPage:
+    - key: testrail-config
+      resource: testrail-config-page
+      title: TestRail Configuration
+      useAsConfig: true
+      render: native
+      resolver:
+        function: admin-page-function
   webtrigger:
     - key: test-trigger
       function: webTriggerFunction
@@ -9,11 +17,16 @@ modules:
       function: scheduledFunction
       interval: hour
   function:
+    - key: admin-page-function
+      handler: index.handler
     - key: webTriggerFunction
       handler: scheduled.run
     - key: scheduledFunction
       handler: scheduled.run
       timeoutSeconds: 900
+resources:
+  - key: testrail-config-page
+    path: src/frontend/index.jsx
 permissions:
   scopes:
     - read:jira-work
@@ -22,10 +35,10 @@ permissions:
   external:
     fetch:
       backend:
-        - https://t24r17upgrade.testrail.io
+        - address: "*.testrail.io"
 app:
   runtime:
     name: nodejs22.x
     memoryMB: 256
     architecture: arm64
-  id: ari:cloud:ecosystem::app/e8505573-3a2a-4084-ac34-281e2fe6f41d
+  id: ari:cloud:ecosystem::app/6b039370-fdd3-4868-8787-0aeb815b4527
