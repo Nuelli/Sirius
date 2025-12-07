@@ -4,20 +4,23 @@ import api, { route, storage } from "@forge/api";
 const COVERAGE_FIELD_ID = "customfield_11969";
 const PASS_RATE_FIELD_ID = "customfield_11999";
 
-async function fetchTestRail(apiMethod) {
-  // Retrieve credentials from environment variables (set with forge variables set --encrypt)
-  const TESTRAIL_USER = process.env.TESTRAIL_USER;
-  const TESTRAIL_API_TOKEN = process.env.TESTRAIL_API_TOKEN;
+async function getConfig() {
+  const config = await storage.get('testrailConfig');
+  if (!config) {
+    throw new Error('TestRail configuration not found. Please configure the app in Jira settings.');
+  }
+  return config;
+}
+
+async function fetchTestRail(apiMethod, config) {
+  const { testrailUser, testrailToken, testrailSite } = config;
   
-  if (!TESTRAIL_USER || !TESTRAIL_API_TOKEN) {
-    const missing = [];
-    if (!TESTRAIL_USER) missing.push('TESTRAIL_USER');
-    if (!TESTRAIL_API_TOKEN) missing.push('TESTRAIL_API_TOKEN');
-    throw new Error(`TestRail credentials not found in environment variables: ${missing.join(', ')}`);
+  if (!testrailUser || !testrailToken || !testrailSite) {
+    throw new Error('TestRail credentials not configured. Please configure them in the app settings.');
   }
 
-  const url = `https://t24r17upgrade.testrail.io/index.php?/api/v2/${apiMethod}`;
-  const authString = `${TESTRAIL_USER}:${TESTRAIL_API_TOKEN}`;
+  const url = `${testrailSite}/index.php?/api/v2/${apiMethod}`;
+  const authString = `${testrailUser}:${testrailToken}`;
   const authBase64 = Buffer.from(authString).toString("base64");
   const headers = { Authorization: `Basic ${authBase64}` };
   const response = await api.fetch(url, {
@@ -34,13 +37,13 @@ async function fetchTestRail(apiMethod) {
   return data;
 }
 
-async function fetchAll(endpoint, itemsKey) {
+async function fetchAll(endpoint, itemsKey, config) {
   let allItems = [];
   let offset = 0;
   const limit = 250;
   while (true) {
     const fullEndpoint = `${endpoint}&limit=${limit}&offset=${offset}`;
-    const data = await fetchTestRail(fullEndpoint);
+    const data = await fetchTestRail(fullEndpoint, config);
     const items = data[itemsKey] || [];
     allItems = allItems.concat(items);
     if (items.length < limit) break;
@@ -65,8 +68,10 @@ function calculateMetrics(obj) {
 export async function run() {
   try {
     console.log("Starting scheduled task");
+    const config = await getConfig();
+    const { coverageFieldId, passRateFieldId } = config;
     const startTime = Date.now();
-    const projects = await fetchAll('get_projects', 'projects');
+    const projects = await fetchAll('get_projects', 'projects', config);
     projects.sort((a, b) => a.id - b.id);
 
     // Get last processed index from storage, default to 0
@@ -87,7 +92,7 @@ export async function run() {
       const project = projects[i];
       const projectId = project.id;
       console.log(`Processing project ${projectId}`);
-      const milestones = await fetchAll(`get_milestones/${projectId}`, 'milestones');
+      const milestones = await fetchAll(`get_milestones/${projectId}`, 'milestones', config);
       for (const milestone of milestones) {
         if (!milestone.refs) {
           console.log(`Milestone ${milestone.id} has no refs, skipping`);
@@ -106,10 +111,10 @@ export async function run() {
         let milestonePassed = 0;
 
         // Fetch test plans for this milestone
-        const plans = await fetchAll(`get_plans/${projectId}&milestone_id=${milestone.id}`, 'plans');
+        const plans = await fetchAll(`get_plans/${projectId}&milestone_id=${milestone.id}`, 'plans', config);
         for (const plan of plans) {
           console.log(`Fetching plan ${plan.id}`);
-          const planDetails = await fetchTestRail(`get_plan/${plan.id}`);
+          const planDetails = await fetchTestRail(`get_plan/${plan.id}`, config);
           const metrics = calculateMetrics(planDetails);
           milestoneTotal += metrics.total;
           milestoneExecuted += metrics.executed;
@@ -117,7 +122,7 @@ export async function run() {
         }
 
         // Fetch standalone runs for this milestone
-        const runs = await fetchAll(`get_runs/${projectId}&milestone_id=${milestone.id}`, 'runs');
+        const runs = await fetchAll(`get_runs/${projectId}&milestone_id=${milestone.id}`, 'runs', config);
         for (const run of runs) {
           console.log(`Processing run ${run.id}`);
           const metrics = calculateMetrics(run);
@@ -171,8 +176,8 @@ export async function run() {
             },
             body: JSON.stringify({
               fields: {
-                [COVERAGE_FIELD_ID]: avgCoverage,
-                [PASS_RATE_FIELD_ID]: avgPassRate
+                [coverageFieldId]: avgCoverage,
+                [passRateFieldId]: avgPassRate
               }
             })
           });
